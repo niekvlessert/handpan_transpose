@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Transponeer een MIDI-melodie naar jouw handpan en oefen met oplichtende noten.">
+  <meta name="theme-color" content="#16191b">
+  <title>Handpan Transposer</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span> Handpan Transposer</div>
+  </header>
+  <main>
+    <div class="intro">
+      <h1>Van melodie naar handpan</h1>
+      <p>Kies een handpan, vind een passende transpositie en speel mee.</p>
+    </div>
+    <div class="workspace">
+      <section class="studio" aria-labelledby="pan-title">
+        <div class="studio-heading">
+          <div><h2 id="pan-title">D Kurd 10</h2><p id="pan-caption">D mineur · 10 noten</p></div>
+          <div class="live-notes" aria-hidden="true">
+            <span id="live-note"></span>
+            <span class="live-missing" id="live-missing"></span>
+          </div>
+        </div>
+        <div class="stage">
+          <div class="instrument" id="instrument" role="group" aria-label="Speelbare handpan"></div>
+        </div>
+        <p class="stage-hint">Tik op een toonveld om de noot te horen.</p>
+        <div class="transport" aria-label="Afspelen">
+          <label for="progress" class="sr-only">Afspeelpositie</label>
+          <div class="timeline">
+            <div id="timeline-notes" aria-hidden="true"></div>
+            <input type="range" id="progress" min="0" value="0" step="any">
+          </div>
+          <div class="transport-controls">
+            <output id="clock" for="progress">0:00 / 0:00</output>
+            <div class="play-group">
+              <button type="button" class="icon-button" id="restart" aria-label="Naar het begin" title="Naar het begin">↤</button>
+              <button type="button" class="icon-button skip" id="back" aria-label="5 seconden terug" title="5 seconden terug">−5</button>
+              <button type="button" class="play" id="play" aria-label="Afspelen" title="Afspelen (spatie)"><span aria-hidden="true"></span></button>
+              <button type="button" class="icon-button skip" id="forward" aria-label="5 seconden vooruit" title="5 seconden vooruit">+5</button>
+            </div>
+            <label class="speed">Snelheid <select id="speed">
+              <option value="0.25">25%</option><option value="0.4">40%</option><option value="0.5">50%</option>
+              <option value="0.6">60%</option><option value="0.7">70%</option><option value="0.8">80%</option>
+              <option value="0.9">90%</option><option value="1" selected>100%</option>
+              <option value="1.1">110%</option><option value="1.25">125%</option>
+            </select></label>
+          </div>
+          <fieldset class="fragment">
+            <legend>Oefenfragment</legend>
+            <div class="fragment-controls">
+              <div class="fragment-bound">
+                <label for="fragment-start">Begin</label>
+                <output id="fragment-start-time" for="fragment-start"></output>
+                <input type="range" id="fragment-start" min="0" step="1" value="0">
+              </div>
+              <div class="fragment-bound">
+                <label for="fragment-end">Einde</label>
+                <output id="fragment-end-time" for="fragment-end"></output>
+                <input type="range" id="fragment-end" min="0" step="1">
+              </div>
+              <button class="button" id="fragment-reset" type="button" disabled>Hele spoor</button>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+      <aside class="settings" aria-label="Instellingen">
+        <section class="panel">
+          <h2>Melodie</h2>
+          <div class="song"><span class="music-icon" aria-hidden="true">♪</span><div><strong id="song-name">Oefenmelodie</strong><span id="song-info"></span></div></div>
+          <div class="input-actions">
+            <label class="button file-button" for="midi-file">Open MIDI</label>
+            <input id="midi-file" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" class="sr-only">
+            <button type="button" id="manual" class="button">Typ noten</button>
+          </div>
+          <fieldset class="track-picker" id="track-field" hidden>
+            <legend>MIDI-spoor</legend>
+            <ul class="track-list" id="track-list"></ul>
+          </fieldset>
+          <p class="error" id="import-error" role="alert" hidden></p>
+        </section>
+        <section class="panel">
+          <h2>Handpan</h2>
+          <ul id="pan-matches" class="pan-matches" aria-label="Transposities per handpan"></ul>
+          <form id="custom-form" hidden>
+            <label class="field">Noten, met de ding als eerste
+              <textarea id="custom-notes" rows="2" required>D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5</textarea>
+            </label>
+            <button type="submit" class="button">Gebruik deze noten</button>
+            <p id="custom-error" class="error" role="alert" hidden></p>
+          </form>
+          <ul class="pitch-list" id="pitch-list" aria-label="Beschikbare noten"></ul>
+        </section>
+        <section class="panel">
+          <h2>Transpositie</h2>
+          <label class="sr-only" for="transpose">Aantal halve tonen</label>
+          <select id="transpose"></select>
+          <label class="mute-control"><input type="checkbox" id="mute-missing"> Ontbrekende noten dempen</label>
+          <p class="fit" id="fit" role="status"></p>
+          <p class="panel-hint">De beste transpositie heeft de minste ontbrekende aanslagen in je fragment.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <dialog id="notation">
+    <form id="notation-form">
+      <h2>Melodie invoeren</h2>
+      <label class="field">Noten <textarea id="notation-notes" rows="4" required placeholder="D4 F4 A4:2 - E4+G4"></textarea></label>
+      <p class="panel-hint">Gebruik spaties tussen de noten. Met <code>:2</code> duurt een noot twee tellen. Gebruik <code>-</code> voor een rust en <code>+</code> voor gelijktijdige noten.</p>
+      <label class="field bpm">Tempo in BPM <input type="number" id="bpm" value="100" min="20" max="300" required></label>
+      <p class="error" id="notation-error" role="alert" hidden></p>
+      <div class="input-actions">
+        <button type="button" class="button" id="cancel-notation">Annuleren</button>
+        <button type="submit" class="button accent">Laad melodie</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
