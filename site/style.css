@@ -75,6 +75,12 @@ h1 {
 .live-notes { display: grid; font-size: .875rem; color: var(--accent); text-align: right; }
 .live-notes .live-missing { color: #ffc4a6; }
 .stage { display: grid; place-items: center; padding: 10px 15px 16px; }
+.stage:has(.pan-face-bottom:not([hidden])) {
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.pan-face { display: grid; justify-items: center; gap: 16px; width: 100%; margin: 0; }
+.pan-face figcaption { color: var(--muted); font-size: .875rem; }
 .instrument {
   position: relative;
   width: min(100%, 390px);
@@ -98,6 +104,17 @@ h1 {
   background: repeating-radial-gradient(ellipse, #f2a7770d 0 1px, transparent 1px 4px);
   opacity: .65;
 }
+.instrument-bottom { width: min(100%, 220px); }
+.instrument-bottom::after {
+  content: "";
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background: #261c17;
+  box-shadow: inset 0 5px 10px #100b08, 0 0 0 3px #ae8265;
+  pointer-events: none;
+}
+.instrument-bottom .pad { z-index: 1; }
 .pad {
   position: absolute;
   display: grid;
@@ -257,6 +274,8 @@ h1 {
 .pan-matches button[aria-pressed="true"] { border-color: #b48768; background: #312822; }
 .pan-matches span { color: var(--muted); overflow-wrap: anywhere; }
 .pan-matches .match-complete { color: var(--green); }
+.kurd-bottom-option { display: flex; align-items: center; gap: 7px; padding: 6px 9px; color: var(--muted); font-size: .875rem; cursor: pointer; }
+.kurd-bottom-option input { margin: 0; accent-color: var(--accent); }
 select { width: 100%; appearance: none; padding: 8px 30px 8px 10px; font-size: .92rem; text-overflow: ellipsis;
   background-image: linear-gradient(45deg, transparent 50%, #d4b298 50%), linear-gradient(135deg, #d4b298 50%, transparent 50%);
   background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
@@ -308,5 +327,7 @@ dialog .input-actions { margin-top: 16px; }
   .play-group { gap: 1px; }
   .icon-button { width: 31px; }
   .fragment-controls { gap: 7px; }
+  .stage:has(.pan-face-bottom:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+  .instrument-bottom { width: min(100%, 168px); }
 }
 @media (prefers-reduced-motion: reduce) { .pad { transition: none; } }

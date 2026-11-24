@@ -16,6 +16,8 @@ Kies onder de tijdlijn **Begin** en **Einde** om een stuk te oefenen. De app ber
 
 Voor een eigen handpan geef je de ding als eerste op. De virtuele velden volgen daarna de ingevoerde volgorde rond de ding, afwisselend aan beide kanten. Het timbre wordt gesynthetiseerd in de browser. MIDI-bestanden blijven lokaal op je apparaat.
 
+Bij **D Kurd 10** zet je **+2 aan de onderkant** aan als je handpan een F3 en G3 op de onderste schaal heeft. Deze twee toonvelden verschijnen in een eigen cirkel en tellen mee voor de transpositie.
+
 ## Lokaal openen
 
 Start vanuit deze map `python3 -m http.server 8000 --directory site` en open [localhost:8000](http://localhost:8000).

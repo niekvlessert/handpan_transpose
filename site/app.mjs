@@ -1,10 +1,10 @@
 import { findTranspositions, noteName, notesInFragment, parseMelody, parseMidi, parseNotes } from './music.mjs';
 
 const $ = id => document.getElementById(id);
-const dKurd10 = parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5');
+const dKurd = { name: 'D Kurd 10', scale: 'D mineur', notes: parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5'), bottom: [] };
+const kurdBottomNotes = parseNotes('F3 G3');
 const instruments = [
-  { name: 'D Kurd 10', scale: 'D mineur', notes: dKurd10 },
-  { name: 'D Kurd 10 +2', scale: 'D mineur', notes: [...dKurd10, ...parseNotes('F3 G3')] },
+  dKurd,
   { name: 'E Amara 13', scale: 'E Celtic mineur', notes: parseNotes('E3 B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 G5 A5') },
   { name: 'E Asha 10', scale: 'E majeur', notes: parseNotes('E3 A3 B3 C#4 D#4 E4 F#4 G#4 A4 B4') },
   { name: 'Eigen handpan', scale: 'Eigen stemming', notes: [] },
@@ -20,6 +20,7 @@ let preview = null;
 let instrument = instruments[0];
 let match = { shift: 0, missing: [], missingCount: 0 };
 const matchesByInstrument = new Map();
+const panControls = new Map();
 let position = 0;
 let playing = false;
 let rate = 1;
@@ -136,38 +137,56 @@ function missingLabel(count) {
   return count === 1 ? '1 aanslag ontbreekt' : `${count} aanslagen ontbreken`;
 }
 
-function renderPanMatches() {
-  const rows = instruments.map((pan, index) => {
-    const options = findTranspositions(practice.notes, pan.notes);
-    const complete = options.filter(option => !option.missingCount);
-    const best = options[0];
-    matchesByInstrument.set(pan, options);
-
+function renderPanChoices() {
+  const rows = instruments.map(pan => {
     const row = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
-    button.dataset.pan = index;
     button.addEventListener('click', () => {
       if (pan !== instrument) chooseInstrument(pan);
     });
     const name = document.createElement('strong');
     name.textContent = pan.name;
     const summary = document.createElement('span');
+    button.append(name, summary);
+    row.append(button);
+    if (pan === dKurd) {
+      const label = document.createElement('label');
+      label.className = 'kurd-bottom-option';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.addEventListener('change', () => {
+        dKurd.bottom = input.checked ? kurdBottomNotes : [];
+        renderPanMatches();
+        chooseInstrument(dKurd);
+      });
+      label.append(input, ' +2 aan de onderkant (F3 en G3)');
+      row.append(label);
+    }
+    panControls.set(pan, { button, summary });
+    return row;
+  });
+  $('pan-matches').replaceChildren(...rows);
+}
+
+function renderPanMatches() {
+  for (const pan of instruments) {
+    const options = findTranspositions(practice.notes, [...pan.notes, ...(pan.bottom ?? [])]);
+    const complete = options.filter(option => !option.missingCount);
+    const best = options[0];
+    matchesByInstrument.set(pan, options);
+    const { summary } = panControls.get(pan);
+    summary.hidden = !practice.notes.length;
+    summary.classList.toggle('match-complete', !!complete.length);
     if (complete.length) {
       const shifts = complete.map(option => signed(option.shift)).join(', ');
-      summary.className = 'match-complete';
       summary.textContent = complete.length === 1
         ? `Past · ${transposeLabel(best.shift)}`
         : `Past · ${shifts} halve tonen`;
     } else {
       summary.textContent = `${missingLabel(best.missingCount)} · ${transposeLabel(best.shift)}`;
     }
-    button.append(name);
-    if (practice.notes.length) button.append(summary);
-    row.append(button);
-    return row;
-  });
-  $('pan-matches').replaceChildren(...rows);
+  }
 }
 
 function updateMatch() {
@@ -179,9 +198,7 @@ function updateMatch() {
     return makeOption(`${label} · ${index === 0 ? 'Beste · ' : ''}${fit}`, shift);
   }));
   $('transpose').disabled = options.length < 2;
-  instruments.forEach((pan, index) => {
-    $('pan-matches').querySelector(`[data-pan="${index}"]`).setAttribute('aria-pressed', String(pan === instrument));
-  });
+  for (const [pan, { button }] of panControls) button.setAttribute('aria-pressed', String(pan === instrument));
   match = options[0];
   showMatch();
 }
@@ -222,28 +239,38 @@ function layoutPad(index, count) {
   };
 }
 
+function makePad(pitch, { x, y, angle, size }, ding = false) {
+  const pad = document.createElement('button');
+  pad.type = 'button';
+  pad.className = ding ? 'pad ding' : 'pad';
+  pad.style.cssText = `--x:${x}%;--y:${y}%;--angle:${angle}deg;--size:${size}%;`;
+  const label = document.createElement('span');
+  label.textContent = noteName(pitch);
+  pad.append(label);
+  pad.setAttribute('aria-label', ding ? `${noteName(pitch)}, ding` : noteName(pitch));
+  pad.addEventListener('click', () => { void tap(pitch); });
+  pads.set(pitch, pad);
+  return pad;
+}
+
 function renderInstrument() {
-  $('pan-title').textContent = instrument.name;
-  $('pan-caption').textContent = `${instrument.scale} · ${instrument.notes.length} noten`;
+  const bottom = instrument.bottom ?? [];
+  $('pan-title').textContent = bottom.length ? `${instrument.name} +${bottom.length}` : instrument.name;
+  $('pan-caption').textContent = `${instrument.scale} · ${instrument.notes.length + bottom.length} noten`;
+  $('top-caption').hidden = !bottom.length;
+  $('bottom-face').hidden = !bottom.length;
+  for (const timer of tapped.values()) clearTimeout(timer);
+  tapped.clear();
   pads.clear();
-  const labels = [];
-  for (const [index, pitch] of instrument.notes.entries()) {
-    const { x, y, angle, size } = layoutPad(index, instrument.notes.length);
-    const pad = document.createElement('button');
-    pad.type = 'button';
-    pad.className = index ? 'pad' : 'pad ding';
-    pad.style.cssText = `--x:${x}%;--y:${y}%;--angle:${angle}deg;--size:${size}%;`;
-    const label = document.createElement('span');
-    label.textContent = noteName(pitch);
-    pad.append(label);
-    pad.setAttribute('aria-label', index ? noteName(pitch) : `${noteName(pitch)}, ding`);
-    pad.addEventListener('click', () => { void tap(pitch); });
-    pads.set(pitch, pad);
+  const topPads = instrument.notes.map((pitch, index) => makePad(pitch, layoutPad(index, instrument.notes.length), index === 0));
+  const bottomPads = bottom.map((pitch, index) => makePad(pitch, { x: index ? 76 : 24, y: 64, angle: 0, size: 30 }));
+  $('instrument').replaceChildren(...topPads);
+  $('instrument-bottom').replaceChildren(...bottomPads);
+  const labels = [...pads.keys()].map(pitch => {
     const chip = document.createElement('li');
     chip.textContent = noteName(pitch);
-    labels.push(chip);
-  }
-  $('instrument').replaceChildren(...pads.values());
+    return chip;
+  });
   $('pitch-list').replaceChildren(...labels);
 }
 
@@ -513,6 +540,7 @@ function renderTracks() {
   $('track-field').hidden = !rows.length;
 }
 
+renderPanChoices();
 renderInstrument();
 loadSong(song, songName);
 
