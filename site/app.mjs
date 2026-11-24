@@ -1,8 +1,10 @@
 import { findTranspositions, noteName, notesInFragment, parseMelody, parseMidi, parseNotes } from './music.mjs';
 
 const $ = id => document.getElementById(id);
+const dKurd10 = parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5');
 const instruments = [
-  { name: 'D Kurd 10', scale: 'D mineur', notes: parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5') },
+  { name: 'D Kurd 10', scale: 'D mineur', notes: dKurd10 },
+  { name: 'D Kurd 10 +2', scale: 'D mineur', notes: [...dKurd10, ...parseNotes('F3 G3')] },
   { name: 'E Amara 13', scale: 'E Celtic mineur', notes: parseNotes('E3 B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 G5 A5') },
   { name: 'E Asha 10', scale: 'E majeur', notes: parseNotes('E3 A3 B3 C#4 D#4 E4 F#4 G#4 A4 B4') },
   { name: 'Eigen handpan', scale: 'Eigen stemming', notes: [] },
