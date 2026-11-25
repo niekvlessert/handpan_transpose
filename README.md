@@ -18,6 +18,8 @@ Voor een eigen handpan geef je de ding als eerste op. De virtuele velden volgen 
 
 Bij **D Kurd 10** zet je **+2 aan de onderkant** aan als je handpan een F3 en G3 op de onderste schaal heeft. Deze twee toonvelden verschijnen in een eigen cirkel en tellen mee voor de transpositie.
 
+De bovenkant van de **D Kurd 10** volgt het aangeleverde schema, gezien vanuit de speler, met A3 rechtsonder, B♭3 linksonder en C5 bovenaan. De **E Amara 13** volgt de 13 velden op de bovenkant van de [Panersia E Amara 20](https://panersiaworld.com/product/handpan-e-amara-20-note-mutant-nebula-design). De overige modellen gebruiken een schematische indeling. De fysieke plaatsing kan per bouwer verschillen.
+
 ## Lokaal openen
 
 Start vanuit deze map `python3 -m http.server 8000 --directory site` en open [localhost:8000](http://localhost:8000).

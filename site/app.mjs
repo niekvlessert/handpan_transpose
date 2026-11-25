@@ -1,14 +1,44 @@
 import { findTranspositions, noteName, notesInFragment, parseMelody, parseMidi, parseNotes } from './music.mjs';
 
 const $ = id => document.getElementById(id);
-const dKurd = { name: 'D Kurd 10', scale: 'D mineur', notes: parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5'), bottom: [] };
+const dKurd = {
+  name: 'D Kurd 10',
+  scale: 'D mineur',
+  notes: parseNotes('D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5'),
+  // Angles from the player's side, in note order after the central ding.
+  topAngles: [20, -20, 60, -60, 100, -100, 140, -140, 180],
+  bottom: [],
+};
 const kurdBottomNotes = parseNotes('F3 G3');
 const instruments = [
   dKurd,
-  { name: 'E Amara 13', scale: 'E Celtic mineur', notes: parseNotes('E3 B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 G5 A5') },
+  {
+    name: 'E Amara 13',
+    scale: 'E Celtic mineur',
+    layoutHint: 'Bovenkant volgens Panersia E Amara 20.',
+    // Player's view, as percentages of the top shell, from Panersia's labeled photo.
+    fields: [
+      { note: 'E3', x: 50, y: 58, size: 24 },
+      { note: 'B3', x: 50, y: 86, size: 19 },
+      { note: 'D4', x: 22, y: 75, size: 18 },
+      { note: 'E4', x: 78, y: 76, size: 18 },
+      { note: 'F#4', x: 13, y: 49, size: 17 },
+      { note: 'G4', x: 87, y: 51, size: 17 },
+      { note: 'A4', x: 18, y: 29, size: 15 },
+      { note: 'B4', x: 84, y: 27, size: 15 },
+      { note: 'D5', x: 36, y: 13, size: 15 },
+      { note: 'E5', x: 65, y: 14, size: 15 },
+      { note: 'F#5', x: 35, y: 35, size: 13 },
+      { note: 'G5', x: 67, y: 36, size: 13 },
+      { note: 'A5', x: 50, y: 23, size: 12 },
+    ],
+  },
   { name: 'E Asha 10', scale: 'E majeur', notes: parseNotes('E3 A3 B3 C#4 D#4 E4 F#4 G#4 A4 B4') },
   { name: 'Eigen handpan', scale: 'Eigen stemming', notes: [] },
 ];
+for (const pan of instruments) {
+  if (pan.fields) pan.notes = parseNotes(pan.fields.map(field => field.note).join(' '));
+}
 const custom = instruments.at(-1);
 custom.notes = parseNotes($('custom-notes').value);
 const demo = 'D4:0.5 F4:0.5 A4 G4:0.5 F4:0.5 E4 -:0.5 C4:0.5 E4 G4:0.5 F4:0.5 D4:2 -:0.5 A3:0.5 C4:0.5 D4 F4:0.5 G4:0.5 A4 -:0.5 G4:0.5 F4 E4:0.5 C4:0.5 D4+A3:2';
@@ -220,7 +250,7 @@ function showMatch() {
   resetVisuals(getTime());
 }
 
-function layoutPad(index, count) {
+function layoutPad(index, count, topAngles) {
   if (!index) return { x: 50, y: 50, angle: 0, size: 23 };
   const outerCount = Math.min(count - 1, 12);
   const inner = index > outerCount;
@@ -228,7 +258,7 @@ function layoutPad(index, count) {
   const step = index - (inner ? outerCount + 1 : 1);
   const distance = slots % 2 ? Math.ceil(step / 2) : Math.floor(step / 2) + 0.5;
   const direction = slots % 2 ? (step % 2 ? 1 : -1) : (step % 2 ? -1 : 1);
-  const angle = direction * distance * 360 / slots + (inner ? 180 / Math.max(slots, 2) : 0);
+  const angle = topAngles?.[index - 1] ?? (direction * distance * 360 / slots + (inner ? 180 / Math.max(slots, 2) : 0));
   const radians = angle * Math.PI / 180;
   const radius = inner ? 22 : 35.5;
   return {
@@ -239,7 +269,7 @@ function layoutPad(index, count) {
   };
 }
 
-function makePad(pitch, { x, y, angle, size }, ding = false) {
+function makePad(pitch, { x, y, angle = 0, size }, ding = false) {
   const pad = document.createElement('button');
   pad.type = 'button';
   pad.className = ding ? 'pad ding' : 'pad';
@@ -259,10 +289,14 @@ function renderInstrument() {
   $('pan-caption').textContent = `${instrument.scale} · ${instrument.notes.length + bottom.length} noten`;
   $('top-caption').hidden = !bottom.length;
   $('bottom-face').hidden = !bottom.length;
+  const layoutHint = instrument.layoutHint ?? (instrument.topAngles ? '' : 'Schematische indeling.');
+  $('layout-hint').hidden = !layoutHint;
+  $('layout-hint').textContent = layoutHint ? `${layoutHint} ` : '';
   for (const timer of tapped.values()) clearTimeout(timer);
   tapped.clear();
   pads.clear();
-  const topPads = instrument.notes.map((pitch, index) => makePad(pitch, layoutPad(index, instrument.notes.length), index === 0));
+  const topPads = instrument.notes.map((pitch, index) =>
+    makePad(pitch, instrument.fields?.[index] ?? layoutPad(index, instrument.notes.length, instrument.topAngles), index === 0));
   const bottomPads = bottom.map((pitch, index) => makePad(pitch, { x: index ? 76 : 24, y: 64, angle: 0, size: 30 }));
   $('instrument').replaceChildren(...topPads);
   $('instrument-bottom').replaceChildren(...bottomPads);
